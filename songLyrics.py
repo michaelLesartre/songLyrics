@@ -2,7 +2,11 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 
-lyrics = pd.read_csv('lyrics.csv')
+
+def clean_data():
+    lyrics = pd.read_csv('lyrics.csv')
+
+
 
 def xavier_init(size):
     in_dim = size[0]
@@ -61,3 +65,20 @@ G_solver = tf.train.AdamOptimizer().minimize(G_loss, var_list=theta_G)
 def sample_Z(m, n):
     '''Uniform prior for G(Z)'''
     return np.random.uniform(-1., 1., size=[m, n])
+
+
+train_size = 128
+Z_dim = 100
+
+sess = tf.Session()
+sess.run(tf.global_variable_initializer())
+
+for it in range(100000):
+    if it % 100 == 0 :
+        # statistics
+
+     # get test data
+    X_train, _ = lyrics.train_next_batch(train_size)
+
+    _, D_loss_current = sess.run([D_solver, D_loss], feed_dict=(X: X_train, Z: sample_Z(train_size, Z_dim)))
+    _, G_loss_current = sess.run([G_solver, G_loss], feed_dict=(Z: sample_Z(train_size, Z_dim)))
