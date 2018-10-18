@@ -1,15 +1,17 @@
 import pandas as pd
 import tensorflow as tf
 import numpy as np
+import re
+from collections import defaultdict
 
 # load in data
 lyrics = pd.read_csv('lyrics.csv')
 genre_lyrics = {}
 word_p = re.compile(r'[a-zA-Z][^\s;,]*')
 
-for genre in xyz.genre.unique():
+for genre in lyrics.genre.unique():
     if genre not in ['Not Available', 'Other']:
-        genre_lyrics[genre] = xyz[xyz['genre']==genre]['lyrics']
+        genre_lyrics[genre] = lyrics[lyrics['genre']==genre]['lyrics']
         wordcounts = defaultdict(int)
         for song in genre_lyrics[genre]:
             if type(song) is str:
@@ -18,12 +20,16 @@ for genre in xyz.genre.unique():
 
 # return random data rows for testing
 def get_next_batch(size, genre):
-    return genre_lyrics[genre].sample(size).map(word_to_num)
+    return np.array([word_to_num(song) for song in genre_lyrics[genre].sample(size)])
 
-# convert a string on song lyrics to string of numbers 
+# convert a string on song lyrics to string of numbers
 def word_to_num(song):
-    return [ord(letter) for letter in song.ljust(10000, '\x00')]
+    return [ord(letter) for letter in str(song).ljust(10000, '\x00')]
 
+print(get_next_batch(128, 'Pop'))
+
+def num_to_word(song):
+    return "".join([chr(num) for num in song])
 
 def xavier_init(size):
     in_dim = size[0]
@@ -56,7 +62,7 @@ theta_G = [G_W1, G_W2, G_b1, G_b2]
 def generator(z):
     G_h1 = tf.nn.relu(tf.matmul(z, G_W1) + G_b1)
     G_log_prob = tf.matmul(G_h1, G_W2) + G_b2
-    G_prob = tf.nn.sigmoid(G_log_prob)
+    G_prob = tf.nn.relu(G_log_prob)
 
     return G_prob
 
@@ -86,18 +92,20 @@ def sample_Z(m, n):
 # initialize testing variables
 train_size = 128
 Z_dim = 100
-current_genre = 'pop'
+current_genre = 'Pop'
 
 # begin session
 sess = tf.Session()
-sess.run(tf.global_variable_initializer())
+sess.run(tf.global_variables_initializer())
 
 # run session iterations for training
 for it in range(100000):
-    if it % 100 == 0 :
+    if it % 1000 == 0 :
         # statistics from most recent training sess
+        sample = sess.run(G_sample, feed_dict={Z: sample_Z(16, Z_dim)})
+        print(sample)
 
     X_train = get_next_batch(train_size, current_genre)
 
-    _, D_loss_current = sess.run([D_solver, D_loss], feed_dict=(X: X_train, Z: sample_Z(train_size, Z_dim)))
-    _, G_loss_current = sess.run([G_solver, G_loss], feed_dict=(Z: sample_Z(train_size, Z_dim)))
+    _, D_loss_current = sess.run([D_solver, D_loss], feed_dict={X: X_train, Z: sample_Z(train_size, Z_dim)})
+    _, G_loss_current = sess.run([G_solver, G_loss], feed_dict={Z: sample_Z(train_size, Z_dim)})
