@@ -2,10 +2,27 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 
+# load in data
+lyrics = pd.read_csv('lyrics.csv')
+genre_lyrics = {}
+word_p = re.compile(r'[a-zA-Z][^\s;,]*')
 
-def clean_data():
-    lyrics = pd.read_csv('lyrics.csv')
+for genre in xyz.genre.unique():
+    if genre not in ['Not Available', 'Other']:
+        genre_lyrics[genre] = xyz[xyz['genre']==genre]['lyrics']
+        wordcounts = defaultdict(int)
+        for song in genre_lyrics[genre]:
+            if type(song) is str:
+                for word in word_p.findall(song):
+                    wordcounts[word.lower()] += 1
 
+# return random data rows for testing
+def get_next_batch(size, genre):
+    return genre_lyrics[genre].sample(size).map(word_to_num)
+
+# convert a string on song lyrics to string of numbers 
+def word_to_num(song):
+    return [ord(letter) for letter in song.ljust(10000, '\x00')]
 
 
 def xavier_init(size):
@@ -14,10 +31,10 @@ def xavier_init(size):
     return tf.random_normal(shape=size, stddev = xavier_stdev)
 
 #Discriminator
-X = tf.placeholder(tf.float32, shape=[None, 1000], name='X')
+X = tf.placeholder(tf.float32, shape=[None, 10000], name='X')
 
 
-D_W1 = tf.Variable(xavier_init([1000, 128]), name='D_W1')
+D_W1 = tf.Variable(xavier_init([10000, 128]), name='D_W1')
 D_b1 = tf.Variable(tf.zeros(shape=[128]), name='D_b1')
 
 D_W2 = tf.Variable(xavier_init([128, 1]), name='D_W2')
@@ -31,8 +48,8 @@ Z = tf.placeholder(tf.float32, shape=[None, 100], name='Z')
 G_W1 = tf.Variable(xavier_init([100, 128]), name='G_W1')
 G_b1 = tf.Variable(tf.zeros(shape=[128]), name='G_b1')
 
-G_W2 = tf.Variable(xavier_init([128, 1000]), name='G_W2')
-G_b2 = tf.Variable(tf.zeros(shape=[1000]), name='G_b2')
+G_W2 = tf.Variable(xavier_init([128, 10000]), name='G_W2')
+G_b2 = tf.Variable(tf.zeros(shape=[10000]), name='G_b2')
 
 theta_G = [G_W1, G_W2, G_b1, G_b2]
 
@@ -66,19 +83,21 @@ def sample_Z(m, n):
     '''Uniform prior for G(Z)'''
     return np.random.uniform(-1., 1., size=[m, n])
 
-
+# initialize testing variables
 train_size = 128
 Z_dim = 100
+current_genre = 'pop'
 
+# begin session
 sess = tf.Session()
 sess.run(tf.global_variable_initializer())
 
+# run session iterations for training
 for it in range(100000):
     if it % 100 == 0 :
-        # statistics
+        # statistics from most recent training sess
 
-     # get test data
-    X_train, _ = lyrics.train_next_batch(train_size)
+    X_train = get_next_batch(train_size, current_genre)
 
     _, D_loss_current = sess.run([D_solver, D_loss], feed_dict=(X: X_train, Z: sample_Z(train_size, Z_dim)))
     _, G_loss_current = sess.run([G_solver, G_loss], feed_dict=(Z: sample_Z(train_size, Z_dim)))
