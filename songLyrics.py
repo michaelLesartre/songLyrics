@@ -15,7 +15,7 @@ class Genre(object):
         self.lyrics = lyrics
         self.raw_text = '\n\n\n'.join(str(x) for x in lyrics).lower()
         self.processed_words = [word.strip(',.!') for word in self.raw_text.split()]
-        self.words = sorted(list(set(processed_words)))
+        self.words = sorted(list(set(self.processed_words)))
         self.word_to_int = dict((w, i) for i, w in enumerate(self.words))
         self.dataX = []
         self.dataY = []
