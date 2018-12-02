@@ -54,6 +54,6 @@ genres = {}
 for genre in lyrics.genre.unique():
     if genre not in ['Not Available', 'Other']:
         genres[genre] = Genre(lyrics[lyrics['genre']==genre]['lyrics'], genre)
-        genres[genre].prepare_model(10)
 
+genres['Pop'].prepare_model(10)
 genres['Pop'].train_model()
