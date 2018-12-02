@@ -5,6 +5,7 @@ from keras import Model, Sequential
 from keras.layers import Dense, Flatten, BatchNormalization, Reshape, Input, Dropout, LSTM
 from keras.callbacks import ModelCheckpoint
 from keras.utils import np_utils
+import re
 #https://machinelearningmastery.com/text-generation-lstm-recurrent-neural-networks-python-keras/
 
 lyrics = pd.read_csv('lyrics.csv', engine='python', dtype = {'lyrics': str})
@@ -13,8 +14,9 @@ class Genre(object):
     def __init__(self, lyrics, name):
         self.lyrics = lyrics
         self.raw_text = '\n\n\n'.join(str(x) for x in lyrics).lower()
-        self.chars = sorted(list(set(self.raw_text)))
-        self.char_to_int = dict((c, i) for i, c in enumerate(self.chars))
+        self.processed_words = [word.strip(',.!') for word in self.raw_text.split()]
+        self.words = sorted(list(set(processed_words))
+        self.word_to_int = dict((w, i) for i, w in enumerate(self.words))
         self.dataX = []
         self.dataY = []
         self.n_patterns = 0
@@ -25,11 +27,12 @@ class Genre(object):
         self.X = None
 
     def prepare_model(self, seq_length):
-        for i in range(0, len(self.raw_text) - seq_length, 1):
-            seq_in = self.raw_text[i:i + seq_length]
-            seq_out = self.raw_text[i + seq_length]
-            self.dataX.append([self.char_to_int[char] for char in seq_in])
-            self.dataY.append(self.char_to_int[seq_out])
+
+        for i in range(0, len(self.processed_words) - seq_length, 1):
+            seq_in = self.processed_words[i:i + seq_length]
+            seq_out = self.processed_words[i + seq_length]
+            self.dataX.append([self.word_to_int[word] for word in seq_in])
+            self.dataY.append(self.word_to_int[seq_out])
         self.n_patterns = len(self.dataX)
 
         X = numpy.reshape(self.dataX, (self.n_patterns, seq_length, 1))
@@ -54,6 +57,6 @@ genres = {}
 for genre in lyrics.genre.unique():
     if genre not in ['Not Available', 'Other']:
         genres[genre] = Genre(lyrics[lyrics['genre']==genre]['lyrics'], genre)
-        genres[genre].prepare_model(10)
 
+genres['Pop'].prepare_model(10)
 genres['Pop'].train_model()
