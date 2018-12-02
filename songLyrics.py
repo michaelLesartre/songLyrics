@@ -10,7 +10,7 @@ from keras.utils import np_utils
 lyrics = pd.read_csv('lyrics.csv', engine='python', dtype = {'lyrics': str})
 
 class Genre(object):
-    def __init__(self, lyrics):
+    def __init__(self, lyrics, name):
         self.lyrics = lyrics
         self.raw_text = '\n\n\n'.join(str(x) for x in lyrics).lower()
         self.chars = sorted(list(set(self.raw_text)))
@@ -19,7 +19,8 @@ class Genre(object):
         self.dataY = []
         self.n_patterns = 0
         self.model = None
-        self.file_path = "weights-improvement-{epoch:02d}-{loss:.4f}.hdf5"
+        self.genre = name
+        self.file_path = self.genre + "-weights-improvement-{epoch:02d}-{loss:.4f}.hdf5"
         self.y = None
         self.X = None
 
@@ -52,7 +53,7 @@ genres = {}
 
 for genre in lyrics.genre.unique():
     if genre not in ['Not Available', 'Other']:
-        genres[genre] = Genre(lyrics[lyrics['genre']==genre]['lyrics'])
+        genres[genre] = Genre(lyrics[lyrics['genre']==genre]['lyrics'], genre)
         genres[genre].prepare_model(10)
 
 genres['Pop'].train_model()
