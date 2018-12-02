@@ -36,7 +36,7 @@ class Genre(object):
         self.n_patterns = len(self.dataX)
 
         X = numpy.reshape(self.dataX, (self.n_patterns, seq_length, 1))
-        self.X = X / float(len(self.chars))
+        self.X = X / float(len(self.words))
         self.y = np_utils.to_categorical(self.dataY)
 
         self.model = Sequential()
