@@ -13,9 +13,9 @@ import os
 class Genre(object):
     def __init__(self, lyrics, name):
         self.lyrics = lyrics
-        self.processed_sentences = [[word.strip(',.!') for word in x.split()] for x in lyrics]
-        self.dataX = []
-        self.dataY = []
+        self.processed_sentences = [[word.strip(',.!') for word in x.split()] for x in lyrics][:2500]
+        self.dataX = None
+        self.dataY = None
         self.n_patterns = 0
         self.model = None
         self.name = name
@@ -25,7 +25,7 @@ class Genre(object):
         self.X = None
 
     def generate_results(self, num_words):
-        seq_length = 25
+        seq_length = 16
         w2v = Word2Vec.load(self.w2v_path)
         word_vectors = w2v.wv
 
@@ -62,33 +62,36 @@ class Genre(object):
 
 
     def prepare_model(self):
-        seq_length=25
+        seq_length=16
         w2v = Word2Vec(self.processed_sentences, size=100, window=5, min_count=1, workers=4)
         word_vectors = w2v.wv
         w2v.save(self.w2v_path)
         del w2v
         print("created word2vec model")
 
+        n_patterns = 0
+        for song in self.processed_sentences:
+            for i in range(0, len(song) - seq_length, 1):
+                n_patterns+=1
+        self.dataX = np.zeros((n_patterns, seq_length, 100))
+        self.dataY = np.zeros((n_patterns, 100))
 
         total_songs = len(self.processed_sentences)
         processed_songs = 0
 
+        pattern = 0
         for song in self.processed_sentences:
-            if processed_songs % 25 == 0:
-                print(f'Processed {processed_songs}/{total_songs} songs', end='\r')
+            if pattern % 25 == 0:
+                print(f'Processed {pattern}/{n_patterns} patterns', end='\r')
             processed_songs+=1;
             for i in range(0, len(song) - seq_length, 1):
                 seq_in = song[i:i + seq_length]
                 seq_out = song[i+seq_length]
-                self.dataX.append([word_vectors.get_vector(word) for word in seq_in])
-                self.dataY.append(word_vectors.get_vector(seq_out))
-        print(f'Processed {processed_songs}/{total_songs} songs')
-        self.n_patterns = len(self.dataX)
+                self.dataX[pattern] =  [word_vectors.get_vector(word) for word in seq_in]
+                self.dataY[pattern] = word_vectors.get_vector(seq_out)
+                pattern += 1
+        print(f'Processed {pattern}/{n_patterns} patterns')
         del word_vectors
-        self.X = np.array(self.dataX)
-		del self.dataX
-        self.y = np.array(self.dataY)
-		del self.dataY
 
         self.model = Sequential()
         self.model.add(LSTM(256, input_shape=(seq_length, 100)))
@@ -106,7 +109,7 @@ class Genre(object):
             save_best_only=True,
             mode='min')
         callbacks_list = [checkpoint]
-        self.model.fit(self.X, self.y,
+        self.model.fit(self.dataX, self.dataY,
                        epochs=epochs,
                        batch_size=batch_size,
                        callbacks=callbacks_list
