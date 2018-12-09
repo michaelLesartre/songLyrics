@@ -86,7 +86,9 @@ class Genre(object):
         self.n_patterns = len(self.dataX)
         del word_vectors
         self.X = np.array(self.dataX)
+		del self.dataX
         self.y = np.array(self.dataY)
+		del self.dataY
 
         self.model = Sequential()
         self.model.add(LSTM(256, input_shape=(seq_length, 100)))
