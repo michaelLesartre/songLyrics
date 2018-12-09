@@ -36,8 +36,8 @@ class Genre(object):
 
         for song in self.processed_sentences:
             for i in range(0, len(song) - seq_length, 1):
-                seq_in = self.processed_words[i:i + seq_length]
-                seq_out = self.processed_words[i+seq_length]
+                seq_in = song[i:i + seq_length]
+                seq_out = song[i+seq_length]
                 self.dataX.append([word_vectors.get_vector(word) for word in seq_in])
                 self.dataY.append(word_vectors.get_vector(seq_out))
         self.n_patterns = len(self.dataX)
