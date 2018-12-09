@@ -74,7 +74,7 @@ class Genre(object):
         processed_songs = 0
 
         for song in self.processed_sentences:
-            if processed_songs % 100 == 0:
+            if processed_songs % 25 == 0:
                 print(f'Processed {processed_songs}/{total_songs} songs', end='\r')
             processed_songs+=1;
             for i in range(0, len(song) - seq_length, 1):
@@ -82,9 +82,9 @@ class Genre(object):
                 seq_out = song[i+seq_length]
                 self.dataX.append([word_vectors.get_vector(word) for word in seq_in])
                 self.dataY.append(word_vectors.get_vector(seq_out))
-        print()
+        print(f'Processed {processed_songs}/{total_songs} songs')
         self.n_patterns = len(self.dataX)
-
+        del word_vectors
         self.X = np.array(self.dataX)
         self.y = np.array(self.dataY)
 
