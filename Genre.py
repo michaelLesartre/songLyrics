@@ -13,7 +13,7 @@ import os
 class Genre(object):
     def __init__(self, lyrics, name):
         self.lyrics = lyrics
-        self.processed_sentences = [[word.strip('(),.!') for word in x.split()] for x in lyrics][:10000]
+        self.processed_sentences = [[word.strip('(),.!') for word in x.split()] for x in lyrics][:7000]
         self.dataX = None
         self.dataY = None
         self.n_patterns = 0
@@ -23,8 +23,8 @@ class Genre(object):
         self.w2v_path = self.name+"_word2vec.model"
         self.y = None
         self.X = None
-        self.seq_len = 14
-        self.wv_len = 200
+        self.seq_length = 14
+        self.wv_len = 100
 
     def generate_results(self, num_words):
         w2v = Word2Vec.load(self.w2v_path)
