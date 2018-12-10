@@ -13,7 +13,7 @@ import os
 class Genre(object):
     def __init__(self, lyrics, name):
         self.lyrics = lyrics
-        self.processed_sentences = [[word.strip(',.!') for word in x.split()] for x in lyrics][:5000]
+        self.processed_sentences = [[word.strip('(),.!') for word in x.split()] for x in lyrics][:10000]
         self.dataX = None
         self.dataY = None
         self.n_patterns = 0
@@ -23,9 +23,10 @@ class Genre(object):
         self.w2v_path = self.name+"_word2vec.model"
         self.y = None
         self.X = None
+        self.seq_len = 14
+        self.wv_len = 200
 
     def generate_results(self, num_words):
-        seq_length = 16
         w2v = Word2Vec.load(self.w2v_path)
         word_vectors = w2v.wv
 
@@ -42,40 +43,45 @@ class Genre(object):
             raise FileNotFoundError(f'no weights for {self.name} found. Has this model been trained?')
         print(f'best checkpoint found: {best_checkpoint}')
         self.model = Sequential()
-        self.model.add(LSTM(256, input_shape=(seq_length, 100)))
-        self.model.add(Dropout(.2))
-        self.model.add(Dense(100, activation='tanh'))
+        self.model.add(LSTM(256, input_shape=(self.seq_length, self.wv_len)))
+        self.model.add(Dropout(.1))
+        self.model.add(Dense(self.wv_len, activation='tanh'))
 
         self.model.load_weights(best_checkpoint)
         self.model.compile(loss='mean_squared_error', optimizer='adam')
 
         song_idx = np.random.randint(0, len(self.processed_sentences)-1)
         song = self.processed_sentences[song_idx]
-        pattern = np.array([word_vectors.get_vector(word) for word in song[:seq_length]])
+        while len(song)<self.seq_len:
+            song_idx = np.random.randint(0, len(self.processed_sentences)-1)
+            song = self.processed_sentences[song_idx]
+        
+        pattern = np.array([word_vectors.get_vector(word) for word in song[:self.seq_length]])
         for i in range(num_words):
-            x=np.reshape(pattern, (1, seq_length, 100))
+            x=np.reshape(pattern, (1, self.seq_length, self.wv_len))
             prediction = self.model.predict(x)
-            result = word_vectors.similar_by_vector(np.reshape(prediction, (100,)), topn=1)[0][0]
-            pattern = np.append(pattern, wv[result], axis=0)
+            options = word_vectors.similar_by_vector(np.reshape(prediction, (self.wv_len,)), topn=5)
+            option_idx = np.random.randint(0, 4)
+            result = options[option_idx][0]
+            pattern = np.append(pattern, [word_vectors[result]], axis=0)
             pattern = pattern[1:len(pattern)]
             print(f'word: {result}')
-
+        print(f"seed song: {song}")
 
 
 
     def prepare_model(self):
-        seq_length=16
-        w2v = Word2Vec(self.processed_sentences, size=100, window=5, min_count=1, workers=4)
+        w2v = Word2Vec(self.processed_sentences, size=self.wv_len, window=5, min_count=1, workers=4)
         word_vectors = w2v.wv
         w2v.save(self.w2v_path)
         del w2v
         print("created word2vec model")
         n_patterns = 0
         for song in self.processed_sentences:
-            for i in range(0, len(song) - seq_length, 1):
+            for i in range(0, len(song) - self.seq_length, 1):
                 n_patterns+=1
-        self.dataX = np.zeros((n_patterns, seq_length, 100))
-        self.dataY = np.zeros((n_patterns, 100))
+        self.dataX = np.zeros((n_patterns, self.seq_length, self.wv_len))
+        self.dataY = np.zeros((n_patterns, self.wv_len))
 
         total_songs = len(self.processed_sentences)
         processed_songs = 0
@@ -85,9 +91,9 @@ class Genre(object):
             if pattern % 25 == 0:
                 print(f'Processed {pattern}/{n_patterns} patterns', end='\r')
             processed_songs+=1;
-            for i in range(0, len(song) - seq_length, 1):
-                seq_in = song[i:i + seq_length]
-                seq_out = song[i+seq_length]
+            for i in range(0, len(song) - self.seq_length, 1):
+                seq_in = song[i:i + self.seq_length]
+                seq_out = song[i+self.seq_length]
                 self.dataX[pattern] =  [word_vectors.get_vector(word) for word in seq_in]
                 self.dataY[pattern] = word_vectors.get_vector(seq_out)
                 pattern += 1
@@ -95,9 +101,9 @@ class Genre(object):
         del word_vectors
 
         self.model = Sequential()
-        self.model.add(LSTM(256, input_shape=(seq_length, 100)))
-        self.model.add(Dropout(.2))
-        self.model.add(Dense(100, activation='tanh'))
+        self.model.add(LSTM(256, input_shape=(self.seq_length, self.wv_len)))
+        self.model.add(Dropout(.1))
+        self.model.add(Dense(self.wv_len, activation='tanh'))
         self.model.compile(loss='mean_squared_error', optimizer='adam')
 
     def train_model(self, epochs=20, batch_size=128):
