@@ -13,7 +13,7 @@ import os
 class Genre(object):
     def __init__(self, lyrics, name):
         self.lyrics = lyrics
-        self.processed_sentences = [[word.strip('(),.!') for word in x.split()] for x in lyrics][:7000]
+        self.processed_sentences = [[word.strip('(),.!') for word in x.split() if word!='[Chorus]'] for x in lyrics][:7000]
         self.dataX = None
         self.dataY = None
         self.n_patterns = 0
@@ -52,7 +52,7 @@ class Genre(object):
 
         song_idx = np.random.randint(0, len(self.processed_sentences)-1)
         song = self.processed_sentences[song_idx]
-        while len(song)<self.seq_len:
+        while len(song)<self.seq_length:
             song_idx = np.random.randint(0, len(self.processed_sentences)-1)
             song = self.processed_sentences[song_idx]
         
