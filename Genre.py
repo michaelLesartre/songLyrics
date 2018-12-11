@@ -8,9 +8,7 @@ from keras.utils import np_utils
 from gensim.models import Word2Vec
 import os
 
-#https://machinelearningmastery.com/text-generation-lstm-recurrent-neural-networks-python-keras/
-
-class Genre(object):
+class genre(object):
     def __init__(self, lyrics, name):
         self.lyrics = lyrics
         self.processed_sentences = [[word.strip('(),.!') for word in x.split() if word!='[Chorus]'] for x in lyrics][:7000]
@@ -38,7 +36,7 @@ class Genre(object):
                 if num>max_checkpoint:
                     max_checkpoint=num
                     best_checkpoint=checkpoint
-        
+
         if not best_checkpoint:
             raise FileNotFoundError(f'no weights for {self.name} found. Has this model been trained?')
         print(f'best checkpoint found: {best_checkpoint}')
@@ -55,8 +53,9 @@ class Genre(object):
         while len(song)<self.seq_length:
             song_idx = np.random.randint(0, len(self.processed_sentences)-1)
             song = self.processed_sentences[song_idx]
-        
+
         pattern = np.array([word_vectors.get_vector(word) for word in song[:self.seq_length]])
+        song = ""
         for i in range(num_words):
             x=np.reshape(pattern, (1, self.seq_length, self.wv_len))
             prediction = self.model.predict(x)
@@ -65,8 +64,9 @@ class Genre(object):
             result = options[option_idx][0]
             pattern = np.append(pattern, [word_vectors[result]], axis=0)
             pattern = pattern[1:len(pattern)]
-            print(f'word: {result}')
-        print(f"seed song: {song}")
+            song += result
+            song += " "
+        print(song)
 
 
 

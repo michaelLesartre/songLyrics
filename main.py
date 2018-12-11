@@ -1,4 +1,4 @@
-from Genre import Genre
+from genre import genre
 import pandas as pd
 import sys
 import argparse
@@ -8,7 +8,7 @@ genres = {}
 
 for genre in lyrics.genre.unique():
     if genre not in ['Not Available', 'Other']:
-        genres[genre] = Genre(lyrics[lyrics['genre'] == genre]['lyrics'], genre)
+        genres[genre] = genre(lyrics[lyrics['genre'] == genre]['lyrics'], genre)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('action', action='store')
