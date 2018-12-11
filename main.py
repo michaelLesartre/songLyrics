@@ -6,9 +6,9 @@ import os
 lyrics = pd.read_csv('lyrics.csv', engine='python', dtype={'lyrics': str})
 genres = {}
 
-for genre in lyrics.genre.unique():
-    if genre not in ['Not Available', 'Other']:
-        genres[genre] = genre(lyrics[lyrics['genre'] == genre]['lyrics'], genre)
+for name in lyrics.genre.unique():
+    if name not in ['Not Available', 'Other']:
+        genres[name] = genre(lyrics[lyrics['genre'] == name]['lyrics'], name)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('action', action='store')
