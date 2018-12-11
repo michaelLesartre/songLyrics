@@ -11,7 +11,7 @@ import os
 class genre(object):
     def __init__(self, lyrics, name):
         self.lyrics = lyrics
-        self.processed_sentences = [[word.strip('(),.!') for word in x.split() if word!='[Chorus]'] for x in lyrics][:7000]
+        self.processed_sentences = [[word.strip('{}[](),.!') for word in x.split() if word!='[Chorus]'] for x in lyrics][:7000]
         self.dataX = None
         self.dataY = None
         self.n_patterns = 0
